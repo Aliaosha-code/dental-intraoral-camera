@@ -6,7 +6,6 @@ import PatientPanel from './components/PatientPanel'
 import PreviewStage from './components/PreviewStage'
 import TitleBar from './components/TitleBar'
 import ToolsPanel from './components/ToolsPanel'
-import { examImages } from './data/images'
 import useCamera from './hooks/useCamera'
 import usePatientStore from './hooks/usePatientStore'
 import PatientManager from './components/PatientManager'
@@ -70,6 +69,17 @@ export default function App() {
   const camera = useCamera()
   const themePreset = useMemo(() => resolveTheme(themeId, customBg), [themeId, customBg])
   const themeStyle = useMemo(() => createThemeStyle(themePreset, accent), [themePreset, accent])
+  const patientImages = useMemo(
+    () =>
+      (selectedPatient?.photos ?? []).map((photo) => ({
+        id: photo.id,
+        label: photo.label,
+        time: photo.time,
+        thumb: photo.thumb,
+        full: photo.dataUrl,
+      })),
+    [selectedPatient?.photos],
+  )
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 1179px)')
@@ -155,6 +165,25 @@ export default function App() {
     setIsLiveView(false)
   }
 
+  const handleCapture = (photo) => {
+    if (!selectedPatient) {
+      showToast('请先选择患者，再保存影像')
+      openPatientManager('profile')
+      return
+    }
+    patientStore.addPhoto(selectedPatient.id, photo)
+    setSelectedIndex(0)
+    setIsLiveView(true)
+    setImagesCollapsed(false)
+    showToast(`影像已保存至 ${selectedPatient.name} 的检查记录`)
+  }
+
+  useEffect(() => {
+    setSelectedIndex(0)
+    setIsLiveView(true)
+    setImagesCollapsed((selectedPatient?.photos?.length ?? 0) === 0)
+  }, [selectedPatient?.id])
+
   return (
     <div
       className="app-shell flex h-screen min-h-[640px] flex-col overflow-hidden"
@@ -184,7 +213,7 @@ export default function App() {
             <PreviewStage
               ref={previewRef}
               camera={camera}
-              image={examImages[selectedIndex] ?? null}
+              image={patientImages[selectedIndex] ?? null}
               brightness={brightness}
               contrast={contrast}
               enhance={activeTools.enhance}
@@ -193,11 +222,12 @@ export default function App() {
               measurementActive={activeTools.measure}
               isLiveView={isLiveView}
               onShowLive={() => setIsLiveView(true)}
+              onCapture={handleCapture}
             />
           </ErrorBoundary>
 
           <ImageStrip
-            images={examImages}
+            images={patientImages}
             selectedIndex={selectedIndex}
             onSelect={handleSelectImage}
             collapsed={imagesCollapsed}

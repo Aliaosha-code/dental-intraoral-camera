@@ -42,6 +42,18 @@ function normalizePatient(patient) {
             createdAt: String(visit.createdAt || ''),
           }))
       : [],
+    photos: Array.isArray(patient.photos)
+      ? patient.photos
+          .filter((photo) => photo && photo.id && photo.dataUrl)
+          .map((photo) => ({
+            id: String(photo.id),
+            label: String(photo.label || '口内影像'),
+            dataUrl: String(photo.dataUrl),
+            thumb: String(photo.thumb || photo.dataUrl),
+            capturedAt: String(photo.capturedAt || ''),
+            time: String(photo.time || ''),
+          }))
+      : [],
     createdAt: String(patient.createdAt || new Date().toISOString()),
     updatedAt: String(patient.updatedAt || new Date().toISOString()),
   }
@@ -123,6 +135,7 @@ export default function usePatientStore() {
         examDate: payload.examDate || todayISO(),
         notes: payload.notes?.trim() || '',
         visits: [],
+        photos: [],
         createdAt: now,
         updatedAt: now,
       }
@@ -157,6 +170,47 @@ export default function usePatientStore() {
     },
     [selectedPatientId],
   )
+
+  const addPhoto = useCallback((patientId, photo) => {
+    const now = new Date()
+    const time = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+    const item = {
+      id: makeId(),
+      label: photo.label || '口内影像',
+      dataUrl: photo.dataUrl,
+      thumb: photo.thumb || photo.dataUrl,
+      capturedAt: now.toISOString(),
+      time,
+    }
+
+    setPatients((current) =>
+      current.map((patient) =>
+        patient.id === patientId
+          ? {
+              ...patient,
+              examDate: todayISO(),
+              photos: [item, ...(patient.photos || [])].slice(0, 30),
+              updatedAt: now.toISOString(),
+            }
+          : patient,
+      ),
+    )
+    return item
+  }, [])
+
+  const deletePhoto = useCallback((patientId, photoId) => {
+    setPatients((current) =>
+      current.map((patient) =>
+        patient.id === patientId
+          ? {
+              ...patient,
+              photos: (patient.photos || []).filter((photo) => photo.id !== photoId),
+              updatedAt: new Date().toISOString(),
+            }
+          : patient,
+      ),
+    )
+  }, [])
 
   const addVisit = useCallback((patientId, payload) => {
     const visit = {
@@ -233,6 +287,8 @@ export default function usePatientStore() {
     createPatient,
     updatePatient,
     deletePatient,
+    addPhoto,
+    deletePhoto,
     addVisit,
     updateVisit,
     deleteVisit,

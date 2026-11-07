@@ -26,6 +26,7 @@ const PreviewStage = forwardRef(function PreviewStage(
     measurementActive,
     isLiveView = true,
     onShowLive,
+    onCapture,
   },
   ref,
 ) {
@@ -47,6 +48,7 @@ const PreviewStage = forwardRef(function PreviewStage(
   const [measurements, setMeasurements] = useState([])
   const [pendingPoint, setPendingPoint] = useState(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [flash, setFlash] = useState(false)
 
   useEffect(() => {
     setMarkers([])
@@ -167,6 +169,41 @@ const PreviewStage = forwardRef(function PreviewStage(
 
   const zoomOut = () => setZoom((current) => Math.max(0.8, Number((current - 0.1).toFixed(1))))
   const zoomIn = () => setZoom((current) => Math.min(2, Number((current + 0.1).toFixed(1))))
+
+  const capturePhoto = () => {
+    const video = videoRef.current
+    if (!video || !streaming || video.readyState < 2 || !video.videoWidth) return
+
+    try {
+      const width = video.videoWidth
+      const height = video.videoHeight
+      const scale = Math.min(1, 1600 / width)
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.round(width * scale)
+      canvas.height = Math.round(height * scale)
+      const context = canvas.getContext('2d')
+      if (!context) return
+
+      const computedFilter = window.getComputedStyle(video).filter
+      context.filter = computedFilter && computedFilter !== 'none' ? computedFilter : 'none'
+      context.drawImage(video, 0, 0, canvas.width, canvas.height)
+
+      const thumbCanvas = document.createElement('canvas')
+      thumbCanvas.width = 320
+      thumbCanvas.height = Math.round((height / width) * 320)
+      const thumbContext = thumbCanvas.getContext('2d')
+      if (!thumbContext) return
+      thumbContext.drawImage(video, 0, 0, thumbCanvas.width, thumbCanvas.height)
+
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.86)
+      const thumb = thumbCanvas.toDataURL('image/jpeg', 0.76)
+      setFlash(true)
+      window.setTimeout(() => setFlash(false), 140)
+      onCapture?.({ dataUrl, thumb, width, height })
+    } catch {
+      // Camera frames can disappear during device changes; ignore this frame.
+    }
+  }
 
   const modeActive = annotationActive || measurementActive
   const isVirtualDevice = (label) =>
@@ -439,6 +476,21 @@ const PreviewStage = forwardRef(function PreviewStage(
             )}
           </div>
         </div>
+      ) : null}
+
+      {flash ? <div className="pointer-events-none absolute inset-0 z-40 bg-white/75" /> : null}
+
+      {streaming && !showingSnapshot ? (
+        <button
+          type="button"
+          onClick={capturePhoto}
+          className="group absolute bottom-[74px] left-1/2 z-30 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full border-[3px] border-white/80 bg-white/20 shadow-[0_6px_22px_rgba(10,25,47,0.2)] transition hover:scale-105 hover:bg-white/30 active:scale-95"
+          aria-label="拍照"
+          title="拍照并保存当前画面"
+        >
+          <span className="h-9 w-9 rounded-full bg-accent-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] transition group-hover:bg-accent-500" />
+          <span className="sr-only">拍照</span>
+        </button>
       ) : null}
 
       <div className="absolute bottom-5 left-5 right-5 z-20 flex items-center justify-between gap-3" data-preview-control>

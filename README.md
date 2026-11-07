@@ -65,6 +65,7 @@ macOS 首次启动时会请求摄像头权限，请在「系统设置 → 隐私
 
 - 三栏工作台布局，实时预览区占据最大空间；空胶片条默认收起，左右侧栏也可折叠，进一步放大相机画面。
 - 启动后自动连接 USB 摄像头，显示设备名、实际采集分辨率与帧率；点击底部相机状态可手动切换摄像头。
+- 实时预览区内置快门按钮，可将当前画面拍摄保存到当前患者的检查图像列表与病例档案中。
 - 工具栏包含增强、曝光、亮度、对比度、锐化、标注、测量与全屏。
 - 曝光滑块直接控制摄像头硬件曝光，并可一键恢复自动曝光。
 - 亮度、对比度、增强与锐化实时作用于视频流；标注、测量可直接在画面上操作，测量结果为未标定参考值，不用于临床计量。
@@ -103,9 +104,8 @@ electron/              Electron 主进程、preload、macOS 权限与图标
 scripts/               Electron 启动脚本、图标生成脚本
 src/
   components/          TitleBar / PatientPanel / PreviewStage / ToolsPanel / ImageStrip / AppearancePanel / PatientManager
-  data/images.js       检查影像数据入口（当前为空）
   hooks/useCamera.js   USB 摄像头枚举、选择、取流、曝光与状态管理
-  hooks/usePatientStore.js 患者档案、病例记录与本地持久化
+  hooks/usePatientStore.js 患者档案、病例记录、影像存储与本地持久化
   theme.js             主题预设、强调色生成与本地外观配置
   App.jsx              工作台状态与布局
   index.css            Tailwind CSS、主题变量与全局样式
