@@ -1,6 +1,8 @@
 import {
   Camera,
   CameraOff,
+  Check,
+  ChevronDown,
   LoaderCircle,
   Maximize2,
   Minimize2,
@@ -28,8 +30,19 @@ const PreviewStage = forwardRef(function PreviewStage(
   ref,
 ) {
   const stageRef = useRef(null)
-  const { videoRef, status, error, deviceName, settings, retry } = camera
+  const {
+    videoRef,
+    status,
+    error,
+    deviceName,
+    activeDeviceId,
+    devices,
+    settings,
+    retry,
+    selectDevice,
+  } = camera
   const [zoom, setZoom] = useState(1)
+  const [cameraMenuOpen, setCameraMenuOpen] = useState(false)
   const [markers, setMarkers] = useState([])
   const [measurements, setMeasurements] = useState([])
   const [pendingPoint, setPendingPoint] = useState(null)
@@ -156,6 +169,10 @@ const PreviewStage = forwardRef(function PreviewStage(
   const zoomIn = () => setZoom((current) => Math.min(2, Number((current + 0.1).toFixed(1))))
 
   const modeActive = annotationActive || measurementActive
+  const isVirtualDevice = (label) =>
+    /obs virtual|amd privacy|privacy view|manycam|snap camera|xsplit|droidcam|virtual camera/i.test(
+      label || '',
+    )
 
   return (
     <section
@@ -367,14 +384,71 @@ const PreviewStage = forwardRef(function PreviewStage(
         ))}
       </div>
 
+      {cameraMenuOpen ? (
+        <div
+          className="preview-pill absolute bottom-[74px] left-5 z-30 w-[264px] rounded-xl border border-white/70 bg-white/95 p-2 shadow-float"
+          data-preview-control
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="flex items-center justify-between px-2 py-1">
+            <span className="text-[9.5px] font-semibold uppercase tracking-[0.12em] text-ink-500">
+              选择摄像头
+            </span>
+            <button
+              type="button"
+              onClick={retry}
+              className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-medium text-accent-600 transition hover:bg-accent-50"
+            >
+              <RefreshCw size={10} />
+              重新连接
+            </button>
+          </div>
+          <div className="mt-1 max-h-[176px] space-y-0.5 overflow-y-auto thin-scroll">
+            {devices.length > 0 ? (
+              devices.map((device, index) => {
+                const selected = device.deviceId === activeDeviceId
+                return (
+                  <button
+                    key={device.deviceId}
+                    type="button"
+                    onClick={() => {
+                      if (!selected) selectDevice(device.deviceId)
+                      setCameraMenuOpen(false)
+                    }}
+                    className={`flex h-8 w-full items-center gap-2 rounded-lg px-2 text-left text-[10.5px] transition ${
+                      selected
+                        ? 'bg-accent-50 text-accent-700'
+                        : 'text-ink-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    <Camera size={13} className="shrink-0" />
+                    <span className="min-w-0 flex-1 truncate">
+                      {device.label || `摄像头 ${index + 1}`}
+                    </span>
+                    {isVirtualDevice(device.label) ? (
+                      <span className="shrink-0 rounded bg-slate-100 px-1 py-0.5 text-[8px] text-ink-400">
+                        虚拟
+                      </span>
+                    ) : null}
+                    {selected ? <Check size={12} className="shrink-0" /> : null}
+                  </button>
+                )
+              })
+            ) : (
+              <p className="px-2 py-4 text-center text-[10px] text-ink-400">未检测到视频设备</p>
+            )}
+          </div>
+        </div>
+      ) : null}
+
       <div className="absolute bottom-5 left-5 right-5 z-20 flex items-center justify-between gap-3" data-preview-control>
         <button
           type="button"
-          onClick={status === 'error' ? retry : undefined}
-          className={`preview-pill flex items-center gap-2.5 rounded-xl border border-white/70 bg-white/95 px-3 py-2 text-left shadow-[0_4px_18px_rgba(10,25,47,0.15)] transition ${
-            status === 'error' ? 'hover:bg-white' : 'cursor-default'
-          }`}
-          title={status === 'error' ? '点击重新连接' : deviceName}
+          onClick={() => setCameraMenuOpen((value) => !value)}
+          className="preview-pill flex items-center gap-2.5 rounded-xl border border-white/70 bg-white/95 px-3 py-2 text-left shadow-[0_4px_18px_rgba(10,25,47,0.15)] transition hover:bg-white"
+          title={deviceName}
+          aria-label="选择摄像头"
+          aria-expanded={cameraMenuOpen}
         >
           {status === 'connected' ? (
             <Camera size={14.5} className="text-accent-600" strokeWidth={1.9} />
@@ -395,6 +469,10 @@ const PreviewStage = forwardRef(function PreviewStage(
           {status === 'error' ? (
             <span className="text-[10px] font-medium text-accent-600 underline">重试</span>
           ) : null}
+          <ChevronDown
+            size={11}
+            className={`shrink-0 text-ink-400 transition-transform ${cameraMenuOpen ? 'rotate-180' : ''}`}
+          />
         </button>
 
         <div className="hidden items-center rounded-lg bg-[#101d30]/55 px-2.5 py-1.5 text-[10px] font-medium tracking-[0.06em] text-white/90 sm:flex">

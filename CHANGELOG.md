@@ -4,7 +4,7 @@
 
 - Initial public release.
 - React + Tailwind CSS + Electron medical imaging workspace.
-- Live USB/Ethernet endoscope camera discovery with 1280×720 / 30 FPS capture.
+- Live USB/Ethernet endoscope camera discovery with 1280×720 / 30 FPS capture and manual camera switching.
 - Exposure, brightness, contrast, enhancement, sharpening, annotation, measurement, and fullscreen tools.
 - Collapsible patient panel, tools panel, and examination image strip.
 - Low-glare warm default theme with soft gray, mist, dark, and custom background colors.

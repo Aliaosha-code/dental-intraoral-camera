@@ -99,6 +99,7 @@ export default function useCamera() {
   const [status, setStatus] = useState('connecting')
   const [error, setError] = useState('')
   const [deviceName, setDeviceName] = useState('USB Camera')
+  const [activeDeviceId, setActiveDeviceId] = useState(null)
   const [devices, setDevices] = useState([])
   const [settings, setSettings] = useState(null)
   const [exposureSupported, setExposureSupported] = useState(false)
@@ -142,6 +143,7 @@ export default function useCamera() {
       frameRate: trackSettings.frameRate ?? 0,
     })
     setDeviceName(track?.label?.replace(/\s*\([^)]*\)\s*$/, '').trim() || 'USB Camera')
+    setActiveDeviceId(trackSettings.deviceId ?? null)
     setStatus('connected')
     setError('')
 
@@ -179,6 +181,7 @@ export default function useCamera() {
       streamRef.current = null
       exposureRangeRef.current = null
       setExposureSupported(false)
+      setActiveDeviceId(null)
       setStatus('error')
       setError('相机连接已断开，请检查 USB 摄像头连接。')
     })
@@ -248,6 +251,7 @@ export default function useCamera() {
       stopStream()
       exposureRangeRef.current = null
       setExposureSupported(false)
+      setActiveDeviceId(null)
       setExposureMode('auto')
       setStatus('connecting')
       setError('')
@@ -390,6 +394,7 @@ export default function useCamera() {
     status,
     error,
     deviceName,
+    activeDeviceId,
     devices,
     settings,
     exposureSupported: exposureSupported && status === 'connected',
@@ -397,6 +402,7 @@ export default function useCamera() {
     exposurePercent,
     setExposure,
     setAutoExposure,
+    selectDevice: connect,
     retry: () => connect(),
   }
 }
