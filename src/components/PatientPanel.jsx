@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, FileText, UserRound } from 'lucide-react'
+import { ChevronLeft, ChevronRight, FileText, UserPlus, UserRound, UsersRound } from 'lucide-react'
 import { useMemo } from 'react'
 
 function displayValue(value) {
@@ -21,7 +21,7 @@ function InfoRow({ label, value, mono = false }) {
   )
 }
 
-export default function PatientPanel({ patient, collapsed, onToggle, onOpenRecord }) {
+export default function PatientPanel({ patient, collapsed, onToggle, onOpenRecord, onOpenManager }) {
   const hasPatient = Boolean(patient?.name)
   const fields = useMemo(
     () => [
@@ -47,9 +47,21 @@ export default function PatientPanel({ patient, collapsed, onToggle, onOpenRecor
           <ChevronRight size={17} />
         </button>
 
-        <div className="mt-5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent-100 to-accent-50 text-accent-600 ring-4 ring-[var(--panel-bg)]">
-          <UserRound size={17} strokeWidth={1.8} />
-        </div>
+        <button
+          type="button"
+          onClick={onOpenManager}
+          className="mt-5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent-100 to-accent-50 text-accent-600 ring-4 ring-[var(--panel-bg)]"
+          aria-label="患者管理"
+          title="患者管理"
+        >
+          {hasPatient ? (
+            <span className="text-[14px] font-semibold text-accent-700">
+              {patient.name.slice(0, 1)}
+            </span>
+          ) : (
+            <UserRound size={17} strokeWidth={1.8} />
+          )}
+        </button>
 
         <div className="mt-5 flex min-h-0 flex-1 items-start justify-center">
           <span className="vertical-label text-[11px] font-semibold tracking-[0.22em] text-ink-500">
@@ -59,11 +71,10 @@ export default function PatientPanel({ patient, collapsed, onToggle, onOpenRecor
 
         <button
           type="button"
-          onClick={onOpenRecord}
-          disabled={!hasPatient}
-          className="mb-4 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-ink-300 transition enabled:bg-accent-50 enabled:text-accent-600 enabled:hover:bg-accent-100 disabled:cursor-not-allowed"
-          aria-label="查看病历"
-          title={hasPatient ? '查看病历' : '请先选择患者'}
+          onClick={hasPatient ? onOpenRecord : onOpenManager}
+          className="mb-4 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-50 text-accent-600 transition hover:bg-accent-100"
+          aria-label={hasPatient ? '查看病历' : '选择患者'}
+          title={hasPatient ? '查看病历' : '选择患者'}
         >
           <FileText size={17} strokeWidth={1.8} />
         </button>
@@ -82,15 +93,26 @@ export default function PatientPanel({ patient, collapsed, onToggle, onOpenRecor
             患者信息
           </h2>
         </div>
-        <button
-          type="button"
-          onClick={onToggle}
-          className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-lg text-ink-400 transition hover:bg-slate-100 hover:text-ink-800"
-          aria-label="收起患者信息"
-          title="收起患者信息"
-        >
-          <ChevronLeft size={17} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={onOpenManager}
+            className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-lg text-ink-400 transition hover:bg-slate-100 hover:text-accent-600"
+            aria-label="患者管理"
+            title="患者管理"
+          >
+            <UsersRound size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={onToggle}
+            className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-lg text-ink-400 transition hover:bg-slate-100 hover:text-ink-800"
+            aria-label="收起患者信息"
+            title="收起患者信息"
+          >
+            <ChevronLeft size={17} />
+          </button>
+        </div>
       </div>
 
       <div className="shrink-0 px-4">
@@ -117,11 +139,21 @@ export default function PatientPanel({ patient, collapsed, onToggle, onOpenRecor
                 ) : null}
               </div>
               <p className="mt-1 text-[11px] text-ink-500">
-                {hasPatient ? `${patient.gender || '—'} · ${patient.age || '—'} · 口腔检查` : '请选择患者后开始检查'}
+                {hasPatient ? `${patient.gender || '—'} · ${patient.age || '—'} · 口腔检查` : '请选择患者'}
               </p>
             </div>
           </div>
         </div>
+        {!hasPatient ? (
+          <button
+            type="button"
+            onClick={onOpenManager}
+            className="mt-2 flex h-8 w-full items-center justify-center gap-1.5 rounded-[10px] border border-dashed border-accent-200 bg-accent-50/60 text-[10.5px] font-medium text-accent-700 transition hover:bg-accent-50"
+          >
+            <UserPlus size={13} />
+            新建 / 选择患者
+          </button>
+        ) : null}
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-5 pt-3 thin-scroll">
@@ -135,15 +167,14 @@ export default function PatientPanel({ patient, collapsed, onToggle, onOpenRecor
       <div className="shrink-0 px-4 pb-4 pt-3">
         <button
           type="button"
-          onClick={onOpenRecord}
-          disabled={!hasPatient}
-          className="group flex h-11 w-full items-center justify-center gap-2 rounded-[13px] bg-accent-600 px-4 text-[12.5px] font-semibold text-[var(--accent-on-color)] shadow-blue-glow transition hover:bg-accent-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none"
+          onClick={hasPatient ? onOpenRecord : onOpenManager}
+          className="group flex h-11 w-full items-center justify-center gap-2 rounded-[13px] bg-accent-600 px-4 text-[12.5px] font-semibold text-[var(--accent-on-color)] shadow-blue-glow transition hover:bg-accent-700 active:scale-[0.99]"
         >
-          <FileText size={16} strokeWidth={1.9} />
-          <span>查看病历</span>
+          {hasPatient ? <FileText size={16} strokeWidth={1.9} /> : <UserPlus size={16} strokeWidth={1.9} />}
+          <span>{hasPatient ? '查看病历' : '选择患者'}</span>
           <ChevronRight
             size={15}
-            className="ml-auto text-[var(--accent-on-color)] opacity-70 transition-transform group-hover:translate-x-0.5 group-disabled:text-slate-400"
+            className="ml-auto text-[var(--accent-on-color)] opacity-70 transition-transform group-hover:translate-x-0.5"
           />
         </button>
       </div>

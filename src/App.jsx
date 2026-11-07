@@ -6,8 +6,10 @@ import PatientPanel from './components/PatientPanel'
 import PreviewStage from './components/PreviewStage'
 import TitleBar from './components/TitleBar'
 import ToolsPanel from './components/ToolsPanel'
-import { examImages, patient as initialPatient } from './data/images'
+import { examImages } from './data/images'
 import useCamera from './hooks/useCamera'
+import usePatientStore from './hooks/usePatientStore'
+import PatientManager from './components/PatientManager'
 import {
   ACCENT_PRESETS,
   DEFAULT_ACCENT,
@@ -30,13 +32,16 @@ const initialTools = {
 export default function App() {
   const [patientCollapsed, setPatientCollapsed] = useState(false)
   const [toolsCollapsed, setToolsCollapsed] = useState(false)
-  const [imagesCollapsed, setImagesCollapsed] = useState(false)
+  const [imagesCollapsed, setImagesCollapsed] = useState(true)
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [isLiveView, setIsLiveView] = useState(true)
   const [brightness, setBrightness] = useState(50)
   const [contrast, setContrast] = useState(50)
   const [activeTools, setActiveTools] = useState(initialTools)
-  const [patient] = useState(initialPatient)
+  const [patientManagerOpen, setPatientManagerOpen] = useState(false)
+  const [patientManagerTab, setPatientManagerTab] = useState('profile')
+  const patientStore = usePatientStore()
+  const selectedPatient = patientStore.selectedPatient
   const [themeId, setThemeId] = useState(() => {
     try {
       const storedThemeId = localStorage.getItem('dental.themeId')
@@ -132,12 +137,17 @@ export default function App() {
     })
   }
 
+  const openPatientManager = (tab = 'profile') => {
+    setPatientManagerTab(tab)
+    setPatientManagerOpen(true)
+  }
+
   const handleOpenRecord = () => {
-    if (!patient.name) {
-      showToast('请先选择患者')
+    if (!selectedPatient) {
+      openPatientManager('profile')
       return
     }
-    showToast(`正在打开 ${patient.name} 的电子病历…`)
+    openPatientManager('records')
   }
 
   const handleSelectImage = (index) => {
@@ -156,16 +166,17 @@ export default function App() {
       <div
         className="workspace grid min-h-0 flex-1 gap-3.5 p-4"
         style={{
-          gridTemplateColumns: `${patientCollapsed ? 66 : 248}px minmax(0, 1fr) ${
-            toolsCollapsed ? 66 : 272
+          gridTemplateColumns: `${patientCollapsed ? 66 : 228}px minmax(0, 1fr) ${
+            toolsCollapsed ? 66 : 268
           }px`,
         }}
       >
         <PatientPanel
-          patient={patient}
+          patient={selectedPatient}
           collapsed={patientCollapsed}
           onToggle={() => setPatientCollapsed((value) => !value)}
           onOpenRecord={handleOpenRecord}
+          onOpenManager={() => openPatientManager('profile')}
         />
 
         <main className="flex min-w-0 flex-col gap-3.5">
@@ -227,11 +238,28 @@ export default function App() {
         />
       </div>
 
+      <PatientManager
+        open={patientManagerOpen}
+        initialTab={patientManagerTab}
+        patients={patientStore.patients}
+        selectedPatient={selectedPatient}
+        selectedPatientId={patientStore.selectedPatientId}
+        onClose={() => setPatientManagerOpen(false)}
+        onSelectPatient={patientStore.setSelectedPatientId}
+        onCreatePatient={patientStore.createPatient}
+        onUpdatePatient={patientStore.updatePatient}
+        onDeletePatient={patientStore.deletePatient}
+        onAddVisit={patientStore.addVisit}
+        onUpdateVisit={patientStore.updateVisit}
+        onDeleteVisit={patientStore.deleteVisit}
+        onNotify={showToast}
+      />
+
       {toast ? (
         <div
           role="status"
           aria-live="polite"
-          className="pointer-events-none fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2.5 rounded-xl border border-[var(--panel-border)] bg-[var(--panel-bg)] px-4 py-3 text-[12px] font-medium text-ink-800 shadow-float animate-fade-up"
+          className="pointer-events-none fixed bottom-6 left-1/2 z-[100] flex -translate-x-1/2 items-center gap-2.5 rounded-xl border border-[var(--panel-border)] bg-[var(--panel-bg)] px-4 py-3 text-[12px] font-medium text-ink-800 shadow-float animate-fade-up"
         >
           <CheckCircle2 size={16} className="text-emerald-500" />
           {toast}

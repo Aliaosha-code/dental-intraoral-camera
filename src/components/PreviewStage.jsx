@@ -268,8 +268,8 @@ const PreviewStage = forwardRef(function PreviewStage(
           data-preview-control
           onClick={(event) => event.stopPropagation()}
         >
-          <div className="w-full max-w-[330px] rounded-2xl border border-white/15 bg-[#0b1526]/95 px-6 py-6 text-center text-white shadow-[0_16px_50px_rgba(0,0,0,0.28)]">
-            <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-white/90 ring-1 ring-white/15">
+          <div className="w-full max-w-[330px] rounded-2xl border border-white/20 bg-[#0b1526]/95 px-6 py-6 text-center text-white shadow-[0_16px_50px_rgba(0,0,0,0.28)]">
+            <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-white/90 ring-1 ring-white/20">
               {status === 'connecting' ? (
                 <LoaderCircle size={21} className="animate-spin" />
               ) : (
@@ -475,7 +475,7 @@ const PreviewStage = forwardRef(function PreviewStage(
           />
         </button>
 
-        <div className="hidden items-center rounded-lg bg-[#101d30]/55 px-2.5 py-1.5 text-[10px] font-medium tracking-[0.06em] text-white/90 sm:flex">
+        <div className="hidden items-center rounded-lg bg-[#101d30]/50 px-2.5 py-1.5 text-[10px] font-medium tracking-[0.06em] text-white/90 sm:flex">
           {showingSnapshot ? `历史影像 · ${image.label}` : streaming ? resolutionText : '等待相机信号'}
         </div>
 

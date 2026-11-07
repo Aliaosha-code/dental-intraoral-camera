@@ -63,11 +63,15 @@ macOS 首次启动时会请求摄像头权限，请在「系统设置 → 隐私
 
 ## 当前功能
 
-- 三栏工作台布局，实时预览区占据最大空间，左右侧栏与底部胶片条均可折叠。
+- 三栏工作台布局，实时预览区占据最大空间；空胶片条默认收起，左右侧栏也可折叠，进一步放大相机画面。
 - 启动后自动连接 USB 摄像头，显示设备名、实际采集分辨率与帧率；点击底部相机状态可手动切换摄像头。
 - 工具栏包含增强、曝光、亮度、对比度、锐化、标注、测量与全屏。
 - 曝光滑块直接控制摄像头硬件曝光，并可一键恢复自动曝光。
 - 亮度、对比度、增强与锐化实时作用于视频流；标注、测量可直接在画面上操作，测量结果为未标定参考值，不用于临床计量。
+- 内置患者管理：可新建/搜索/编辑患者档案，录入主诉、现病史、检查所见、诊断、治疗计划、医嘱与复诊日期，支持病例编辑和删除。
+- 患者资料保存在本机 `localStorage`，适合单机使用；正式接入诊所业务前应替换为加密后端或 HIS 接口。
+
+![患者管理](./docs/screenshots/patient-manager.png)
 - 外观设置：点击工具栏右上角调色盘，可切换「暖米 / 柔和灰 / 雾蓝 / 深色」底色，也可选择任意自定义背景色。
 - 强调色支持医疗蓝、青绿、鼠尾草、紫罗兰、陶土、玫瑰及任意自定义颜色；主题与颜色会保存在本机。
 - 默认使用低眩光暖米主题，降低长时间观看时的白色刺眼感。
@@ -98,9 +102,10 @@ macOS 首次启动时会请求摄像头权限，请在「系统设置 → 隐私
 electron/              Electron 主进程、preload、macOS 权限与图标
 scripts/               Electron 启动脚本、图标生成脚本
 src/
-  components/          TitleBar / PatientPanel / PreviewStage / ToolsPanel / ImageStrip / AppearancePanel
-  data/images.js       患者与检查影像数据入口（当前为空）
+  components/          TitleBar / PatientPanel / PreviewStage / ToolsPanel / ImageStrip / AppearancePanel / PatientManager
+  data/images.js       检查影像数据入口（当前为空）
   hooks/useCamera.js   USB 摄像头枚举、选择、取流、曝光与状态管理
+  hooks/usePatientStore.js 患者档案、病例记录与本地持久化
   theme.js             主题预设、强调色生成与本地外观配置
   App.jsx              工作台状态与布局
   index.css            Tailwind CSS、主题变量与全局样式

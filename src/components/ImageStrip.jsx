@@ -107,7 +107,7 @@ export default function ImageStrip({
                       draggable="false"
                     />
                     <span className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent" />
-                    <span className="absolute left-1.5 top-1.5 rounded bg-black/45 px-1 py-0.5 text-[8px] font-semibold tabular-nums text-white/90">
+                    <span className="absolute left-1.5 top-1.5 rounded bg-black/50 px-1 py-0.5 text-[8px] font-semibold tabular-nums text-white/90">
                       {String(index + 1).padStart(2, '0')}
                     </span>
                     <span className="absolute bottom-1.5 left-0 right-0 truncate px-1.5 text-center text-[9.5px] font-medium text-white drop-shadow-sm">
