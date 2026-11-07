@@ -37,6 +37,7 @@ const PreviewStage = forwardRef(function PreviewStage(
     error,
     deviceName,
     activeDeviceId,
+    activeDeviceIsVirtual,
     devices,
     settings,
     retry,
@@ -516,6 +517,11 @@ const PreviewStage = forwardRef(function PreviewStage(
           {status === 'connected' ? (
             <span className="hidden max-w-[110px] truncate text-[9.5px] font-normal text-ink-400 sm:inline">
               {deviceName}
+            </span>
+          ) : null}
+          {status === 'connected' && activeDeviceIsVirtual ? (
+            <span className="shrink-0 rounded bg-amber-50 px-1 py-0.5 text-[8.5px] font-medium text-amber-600">
+              虚拟
             </span>
           ) : null}
           {status === 'error' ? (

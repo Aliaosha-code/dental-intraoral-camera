@@ -1,8 +1,43 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-const USB_CAMERA_PATTERN = /supereyes|usb\s*(video|camera)|uvc|intraoral|dental|endoscope|microscope/i
+const USB_CAMERA_PATTERN =
+  /supereyes|usb(?:\s*2\.0)?\s*(?:video|camera|摄像头|视频)|uvc|intraoral|dental|endoscope|microscope|webcam/i
 const VIRTUAL_CAMERA_PATTERN =
   /obs virtual|amd privacy|privacy view|manycam|snap camera|xsplit|droidcam|virtual camera/i
+const CAMERA_PREFERENCE_KEY = ['dental', 'camera', 'preference', 'v1'].join('.')
+
+function readCameraPreference() {
+  try {
+    const raw = localStorage.getItem(CAMERA_PREFERENCE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    return parsed && (parsed.deviceId || parsed.label) ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+function saveCameraPreference(deviceId, label) {
+  try {
+    localStorage.setItem(
+      CAMERA_PREFERENCE_KEY,
+      JSON.stringify({ deviceId: deviceId || '', label: label || '' }),
+    )
+  } catch {
+    // Preference persistence is optional.
+  }
+}
+
+function cameraScore(device) {
+  const label = device?.label || ''
+  if (VIRTUAL_CAMERA_PATTERN.test(label)) return -100
+  return (
+    (/supereyes/i.test(label) ? 100 : 0) +
+    (/uvc|intraoral|dental|endoscope|microscope/i.test(label) ? 55 : 0) +
+    (USB_CAMERA_PATTERN.test(label) ? 30 : 0) +
+    (/camera|webcam|摄像|视频/i.test(label) ? 10 : 0)
+  )
+}
 
 function createCameraError(name, message) {
   const error = new Error(message)
@@ -32,20 +67,23 @@ function describeCameraError(error) {
   }
 }
 
-function pickCamera(devices, requestedDeviceId) {
+function pickCamera(devices, requestedDeviceId, savedPreference = null) {
   if (requestedDeviceId) {
     return devices.find((device) => device.deviceId === requestedDeviceId) ?? null
   }
 
-  const physicalDevices = devices.filter((device) => !VIRTUAL_CAMERA_PATTERN.test(device.label))
-  return (
-    physicalDevices.find((device) => USB_CAMERA_PATTERN.test(device.label)) ??
-    physicalDevices[0] ??
-    // A virtual/privacy camera is still better than showing no preview at all
-    // when it is the only video input on the machine.
-    devices.find((device) => device.kind === 'videoinput') ??
-    null
-  )
+  if (savedPreference) {
+    const savedDevice =
+      devices.find((device) => device.deviceId && device.deviceId === savedPreference.deviceId) ||
+      devices.find((device) => device.label && device.label === savedPreference.label)
+    if (savedDevice) return savedDevice
+  }
+
+  const rankedDevices = [...devices].sort((first, second) => {
+    const scoreDelta = cameraScore(second) - cameraScore(first)
+    return scoreDelta !== 0 ? scoreDelta : (first.deviceId || '').localeCompare(second.deviceId || '')
+  })
+  return rankedDevices[0] ?? null
 }
 
 async function listVideoDevices() {
@@ -53,15 +91,31 @@ async function listVideoDevices() {
   return devices.filter((device) => device.kind === 'videoinput')
 }
 
-async function openStream(deviceId) {
-  const video = {
-    width: { ideal: 1280 },
-    height: { ideal: 720 },
-    frameRate: { ideal: 30, max: 30 },
-  }
+async function openStream(deviceId, lowQuality = false) {
+  const video = lowQuality
+    ? {
+        width: { ideal: 640 },
+        height: { ideal: 480 },
+        frameRate: { ideal: 30, max: 30 },
+      }
+    : {
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        frameRate: { ideal: 30, max: 30 },
+      }
   if (deviceId) video.deviceId = { exact: deviceId }
 
   return navigator.mediaDevices.getUserMedia({ audio: false, video })
+}
+
+async function openCamera(deviceId) {
+  try {
+    return await openStream(deviceId)
+  } catch (error) {
+    if (!['OverconstrainedError', 'NotReadableError'].includes(error?.name)) throw error
+    await new Promise((resolve) => window.setTimeout(resolve, 250))
+    return openStream(deviceId, true)
+  }
 }
 
 function isValidExposureRange(range) {
@@ -96,10 +150,13 @@ export default function useCamera() {
   const exposureRequestRef = useRef(0)
   const exposureQueueRef = useRef(Promise.resolve())
   const mountedRef = useRef(true)
+  const manualCameraRef = useRef(false)
+  const deviceChangeTimerRef = useRef(null)
   const [status, setStatus] = useState('connecting')
   const [error, setError] = useState('')
   const [deviceName, setDeviceName] = useState('USB Camera')
   const [activeDeviceId, setActiveDeviceId] = useState(null)
+  const [activeDeviceIsVirtual, setActiveDeviceIsVirtual] = useState(false)
   const [devices, setDevices] = useState([])
   const [settings, setSettings] = useState(null)
   const [exposureSupported, setExposureSupported] = useState(false)
@@ -144,6 +201,7 @@ export default function useCamera() {
     })
     setDeviceName(track?.label?.replace(/\s*\([^)]*\)\s*$/, '').trim() || 'USB Camera')
     setActiveDeviceId(trackSettings.deviceId ?? null)
+    setActiveDeviceIsVirtual(VIRTUAL_CAMERA_PATTERN.test(track?.label ?? ''))
     setStatus('connected')
     setError('')
 
@@ -182,6 +240,7 @@ export default function useCamera() {
       exposureRangeRef.current = null
       setExposureSupported(false)
       setActiveDeviceId(null)
+      setActiveDeviceIsVirtual(false)
       setStatus('error')
       setError('相机连接已断开，请检查 USB 摄像头连接。')
     })
@@ -246,12 +305,14 @@ export default function useCamera() {
   }, [])
 
   const connect = useCallback(
-    async (requestedDeviceId) => {
+    async (requestedDeviceId, { manual = false } = {}) => {
       const requestId = ++requestIdRef.current
+      manualCameraRef.current = manual
       stopStream()
       exposureRangeRef.current = null
       setExposureSupported(false)
       setActiveDeviceId(null)
+      setActiveDeviceIsVirtual(false)
       setExposureMode('auto')
       setStatus('connecting')
       setError('')
@@ -276,7 +337,8 @@ export default function useCamera() {
         if (!mountedRef.current || requestId !== requestIdRef.current) return
 
         setDevices(initialDevices)
-        let selectedDevice = pickCamera(initialDevices, requestedDeviceId)
+        const savedPreference = readCameraPreference()
+        let selectedDevice = pickCamera(initialDevices, requestedDeviceId, savedPreference)
         const hasVisibleDeviceLabels = initialDevices.some((device) => Boolean(device.label))
 
         if (!selectedDevice && hasVisibleDeviceLabels && !requestedDeviceId) {
@@ -284,14 +346,14 @@ export default function useCamera() {
         }
 
         try {
-          pendingStream = await openStream(selectedDevice?.deviceId)
+          pendingStream = await openCamera(requestedDeviceId || selectedDevice?.deviceId)
         } catch (openError) {
-          if (openError.name === 'OverconstrainedError') {
-            pendingStream = await openStream()
-            selectedDevice = null
-          } else {
-            throw openError
-          }
+          const canRetryGeneric =
+            !manual &&
+            !requestedDeviceId &&
+            ['NotFoundError', 'OverconstrainedError', 'NotReadableError'].includes(openError.name)
+          if (!canRetryGeneric) throw openError
+          pendingStream = await openCamera()
         }
 
         if (!mountedRef.current || requestId !== requestIdRef.current) {
@@ -308,7 +370,7 @@ export default function useCamera() {
         }
 
         setDevices(refreshedDevices)
-        const preferredDevice = pickCamera(refreshedDevices, requestedDeviceId)
+        const preferredDevice = pickCamera(refreshedDevices, requestedDeviceId, savedPreference)
         const currentTrack = pendingStream.getVideoTracks()[0]
         const currentDeviceId = currentTrack?.getSettings?.().deviceId
         const currentLabel = currentTrack?.label ?? ''
@@ -321,13 +383,23 @@ export default function useCamera() {
           throw createCameraError('NotFoundError', 'No physical camera available')
         }
 
-        if (!requestedDeviceId && preferredDevice?.deviceId && preferredDevice.deviceId !== currentDeviceId) {
+        if (
+          !manual &&
+          preferredDevice?.deviceId &&
+          preferredDevice.deviceId !== currentDeviceId
+        ) {
           cleanupPendingStream()
-          pendingStream = await openStream(preferredDevice.deviceId)
+          pendingStream = await openCamera(preferredDevice.deviceId)
           if (!mountedRef.current || requestId !== requestIdRef.current) {
             cleanupPendingStream()
             return
           }
+        }
+
+        const finalTrack = pendingStream.getVideoTracks()[0]
+        const finalSettings = finalTrack?.getSettings?.() ?? {}
+        if (manual || USB_CAMERA_PATTERN.test(finalTrack?.label ?? '')) {
+          saveCameraPreference(finalSettings.deviceId, finalTrack?.label ?? '')
         }
 
         attachStream(pendingStream)
@@ -362,15 +434,17 @@ export default function useCamera() {
       const availableDevices = await listVideoDevices().catch(() => [])
       if (!mountedRef.current) return
 
-      const preferredDevice = pickCamera(availableDevices)
+      const preferredDevice = pickCamera(availableDevices, undefined, readCameraPreference())
       const currentTrack = streamRef.current?.getVideoTracks?.()[0]
       const currentLabel = currentTrack?.label ?? ''
       const currentDeviceId = currentTrack?.getSettings?.().deviceId
 
       if (!streamRef.current) {
-        connect()
+        connect(undefined, { manual: false })
         return
       }
+
+      if (manualCameraRef.current) return
 
       // If a dedicated USB/endoscope camera is plugged in after the app
       // started on a built-in or virtual camera, switch to it automatically.
@@ -381,12 +455,22 @@ export default function useCamera() {
           (USB_CAMERA_PATTERN.test(preferredDevice.label) &&
             !USB_CAMERA_PATTERN.test(currentLabel)))
       ) {
-        connect(preferredDevice.deviceId)
+        connect(preferredDevice.deviceId, { manual: false })
       }
     }
 
-    mediaDevices.addEventListener('devicechange', handleDeviceChange)
-    return () => mediaDevices.removeEventListener('devicechange', handleDeviceChange)
+    const scheduleDeviceRefresh = () => {
+      if (deviceChangeTimerRef.current) window.clearTimeout(deviceChangeTimerRef.current)
+      deviceChangeTimerRef.current = window.setTimeout(() => {
+        handleDeviceChange()
+      }, 250)
+    }
+
+    mediaDevices.addEventListener('devicechange', scheduleDeviceRefresh)
+    return () => {
+      mediaDevices.removeEventListener('devicechange', scheduleDeviceRefresh)
+      if (deviceChangeTimerRef.current) window.clearTimeout(deviceChangeTimerRef.current)
+    }
   }, [connect])
 
   return {
@@ -395,6 +479,7 @@ export default function useCamera() {
     error,
     deviceName,
     activeDeviceId,
+    activeDeviceIsVirtual,
     devices,
     settings,
     exposureSupported: exposureSupported && status === 'connected',
@@ -402,7 +487,7 @@ export default function useCamera() {
     exposurePercent,
     setExposure,
     setAutoExposure,
-    selectDevice: connect,
-    retry: () => connect(),
+    selectDevice: (deviceId) => connect(deviceId, { manual: true }),
+    retry: () => connect(undefined, { manual: false }),
   }
 }
