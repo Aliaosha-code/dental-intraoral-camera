@@ -1,0 +1,362 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family:
+    Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei UI',
+    'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC', sans-serif;
+  color: #142033;
+  background: #eef2f7;
+  color-scheme: light;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  --ink-950: 11 21 38;
+  --ink-900: 20 32 51;
+  --ink-800: 29 43 64;
+  --ink-700: 46 61 82;
+  --ink-600: 64 80 102;
+  --ink-500: 82 98 122;
+  --ink-400: 92 107 128;
+  --ink-300: 124 138 157;
+
+  --accent-50: 239 244 255;
+  --accent-100: 219 232 255;
+  --accent-200: 191 214 255;
+  --accent-300: 146 185 255;
+  --accent-400: 94 148 251;
+  --accent-500: 52 120 246;
+  --accent-600: 36 101 232;
+  --accent-700: 29 82 200;
+  --accent-on-color: #ffffff;
+
+  --app-bg: #e5ded2;
+  --app-bg-top: #f0e9de;
+  --app-glow: rgba(255, 249, 238, 0.58);
+  --panel-bg: #f4efe6;
+  --panel-soft: #ebe3d7;
+  --panel-border: rgba(255, 255, 255, 0.62);
+  --glass-bg: rgba(255, 255, 255, 0.94);
+  --line-soft: rgba(226, 232, 240, 0.9);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 960px;
+  overflow: hidden;
+  background: var(--app-bg);
+}
+
+button {
+  font: inherit;
+}
+
+button:focus-visible {
+  outline: 2px solid rgb(var(--accent-500) / 0.55);
+  outline-offset: 2px;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: rgb(var(--accent-500) / 0.18);
+  color: rgb(var(--ink-900));
+}
+
+.app-shell {
+  color-scheme: light;
+  background-color: var(--app-bg);
+  background-image:
+    radial-gradient(1100px 560px at 58% -18%, var(--app-glow), transparent 68%),
+    radial-gradient(900px 700px at -8% 110%, rgb(var(--accent-500) / 0.055), transparent 64%),
+    linear-gradient(135deg, var(--app-bg-top) 0%, var(--app-bg) 100%);
+}
+
+.titlebar {
+  -webkit-app-region: drag;
+  user-select: none;
+  background-color: var(--panel-bg);
+  border-color: var(--panel-border);
+}
+
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+.brand-mark {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.24) 0%, transparent 38%),
+    linear-gradient(
+      135deg,
+      rgb(var(--accent-400)) 0%,
+      rgb(var(--accent-500)) 46%,
+      rgb(var(--accent-700)) 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.36),
+    0 7px 18px rgb(var(--accent-500) / 0.24);
+}
+
+.panel {
+  background-color: var(--panel-bg);
+  border-color: var(--panel-border);
+  transition:
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.image-strip {
+  background-color: var(--panel-bg);
+  border-color: var(--panel-border);
+}
+
+.patient-summary {
+  background:
+    radial-gradient(120px 100px at 100% 0%, rgba(255, 255, 255, 0.35), transparent 70%),
+    linear-gradient(
+      135deg,
+      rgb(var(--accent-500) / 0.09) 0%,
+      var(--panel-bg) 52%,
+      rgb(var(--accent-500) / 0.055) 100%
+    );
+  border-color: var(--panel-border);
+}
+
+.patient-summary::after {
+  content: '';
+  position: absolute;
+  width: 74px;
+  height: 74px;
+  right: -22px;
+  bottom: -38px;
+  border-radius: 999px;
+  border: 13px solid rgb(var(--accent-500) / 0.08);
+}
+
+.vertical-label {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+.preview-stage {
+  box-shadow:
+    0 1px 2px rgba(12, 26, 48, 0.08),
+    0 16px 38px rgba(12, 26, 48, 0.12);
+}
+
+.preview-stage:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  border: 0;
+  border-radius: 0;
+}
+
+.preview-stage:fullscreen .preview-image {
+  object-fit: contain;
+  background: #0b1220;
+}
+
+.preview-image {
+  transform-origin: center;
+  transition: transform 220ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+.preview-pill {
+  background-color: var(--glass-bg) !important;
+  border-color: var(--panel-border) !important;
+}
+
+.thumbnail-selected {
+  box-shadow: 0 3px 12px rgb(var(--accent-500) / 0.22);
+}
+
+.range-input {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.range-input:disabled {
+  cursor: not-allowed;
+}
+
+.range-input:focus-visible {
+  outline: 2px solid rgb(var(--accent-500) / 0.55);
+  outline-offset: 4px;
+  border-radius: 999px;
+}
+
+.range-input::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    rgb(var(--accent-500)) 0%,
+    rgb(var(--accent-500)) var(--range-progress, 50%),
+    color-mix(in srgb, rgb(var(--ink-400)) 28%, transparent) var(--range-progress, 50%),
+    color-mix(in srgb, rgb(var(--ink-400)) 28%, transparent) 100%
+  );
+}
+
+.range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border: 3px solid var(--panel-bg);
+  border-radius: 50%;
+  background: rgb(var(--accent-500));
+  box-shadow:
+    0 1px 5px rgb(var(--accent-600) / 0.3),
+    0 0 0 1px rgb(var(--accent-600) / 0.06);
+  transition: transform 120ms ease;
+}
+
+.range-input:active::-webkit-slider-thumb {
+  transform: scale(1.12);
+}
+
+.range-input::-moz-range-track {
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, rgb(var(--ink-400)) 28%, transparent);
+}
+
+.range-input::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: rgb(var(--accent-500));
+}
+
+.range-input::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border: 3px solid var(--panel-bg);
+  border-radius: 50%;
+  background: rgb(var(--accent-500));
+  box-shadow: 0 1px 5px rgb(var(--accent-600) / 0.3);
+}
+
+.thin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, rgb(var(--ink-400)) 45%, transparent) transparent;
+}
+
+.thin-scroll::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.thin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.thin-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, rgb(var(--ink-400)) 40%, transparent);
+}
+
+.thin-scroll::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, rgb(var(--ink-400)) 58%, transparent);
+}
+
+.appearance-popover {
+  background-color: var(--panel-bg);
+  border-color: var(--panel-border);
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+[data-theme='dark'] .bg-white {
+  background-color: var(--panel-bg) !important;
+}
+
+[data-theme='dark'] .panel [class*='bg-white/'],
+[data-theme='dark'] .image-strip [class*='bg-white/'],
+[data-theme='dark'] .titlebar [class*='bg-white/'] {
+  background-color: color-mix(in srgb, var(--panel-bg) 92%, transparent) !important;
+}
+
+[data-theme='dark'] [class~='bg-slate-50'],
+[data-theme='dark'] [class~='bg-slate-50/70'],
+[data-theme='dark'] [class~='bg-slate-50/90'],
+[data-theme='dark'] [class~='bg-slate-100'],
+[data-theme='dark'] [class~='bg-slate-200'] {
+  background-color: var(--panel-soft) !important;
+}
+
+[data-theme='dark'] [class~='border-slate-100'],
+[data-theme='dark'] [class~='border-slate-100/90'],
+[data-theme='dark'] [class~='border-slate-200'],
+[data-theme='dark'] [class~='border-slate-200/80'] {
+  border-color: var(--line-soft) !important;
+}
+
+[data-theme='dark'] [class~='text-slate-500'],
+[data-theme='dark'] [class~='text-slate-400'],
+[data-theme='dark'] [class~='text-slate-300'] {
+  color: rgb(var(--ink-400)) !important;
+}
+
+[data-theme='dark'] [class~='hover:bg-slate-100']:hover,
+[data-theme='dark'] [class~='hover:bg-slate-50']:hover,
+[data-theme='dark'] [class~='hover:bg-slate-50/90']:hover {
+  background-color: var(--panel-soft) !important;
+}
+
+[data-theme='dark'] [class~='hover:bg-white']:hover,
+[data-theme='dark'] .group:hover [class~='group-hover:bg-white'] {
+  background-color: var(--panel-bg) !important;
+}
+
+[data-theme='dark'] .patient-summary {
+  background:
+    radial-gradient(120px 100px at 100% 0%, rgb(var(--accent-500) / 0.12), transparent 70%),
+    linear-gradient(135deg, var(--panel-soft) 0%, var(--panel-bg) 58%, var(--panel-soft) 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (max-height: 760px) {
+  .workspace {
+    gap: 10px;
+    padding: 10px;
+  }
+}
